@@ -60,10 +60,18 @@ app.get('/orders', async(req, res) => {
       email: req.query.email
     }
   }
-
    const cursor = orderCollection.find(query);
    const orders = await cursor.toArray();
    res.send(orders)
+});
+
+// deleting one order
+app.delete('/orders/:id', async (req, res) => {
+  const id = req.params.id
+  const query = {_id:ObjectId(id)}
+  const result = await orderCollection.deleteOne(query)
+  res.send(result);
+
 })
 
 }
