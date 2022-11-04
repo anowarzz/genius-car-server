@@ -28,7 +28,7 @@ try{
 
   const orderCollection = client.db('geniusCar').collection('orders')
 
-  // service api
+  // service api - loading all service from db
   app.get('/services', async (req, res) => {
     const query = {}; 
     const cursor = serviceCollection.find(query);
@@ -36,7 +36,7 @@ try{
     res.send(services)
   })
 
-  // specific services by id
+  // specific services by id - loading one service only 
   app.get('/services/:id', async (req, res) => {
     const id = req.params.id;
     const query = {_id: ObjectId(id)}
@@ -44,11 +44,26 @@ try{
     res.send(service)
   })
 
-// Orders api
+// Orders api - sending order to db
 app.post('/orders', async (req , res) => {
   const order = req.body;
   const result = await orderCollection.insertOne(order)
   res.send(result)
+})
+
+// getting users orders from db
+app.get('/orders', async(req, res) => {
+  let query = {};
+
+  if(req.query.email){
+    query = {
+      email: req.query.email
+    }
+  }
+
+   const cursor = orderCollection.find(query);
+   const orders = await cursor.toArray();
+   res.send(orders)
 })
 
 }
