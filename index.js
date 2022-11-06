@@ -16,10 +16,26 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.v1rp4a3.mongodb.net/?retryWrites=true&w=majority`;
 
-
  
-
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+
+
+function verifyJWT(req, res, next) {
+const authHeader = req.headers.authorization;
+if(!authHeader){
+  res.status(401).send({message: 'Unauthorized access'})
+}
+const token = authHeader.split(' ')[1];
+jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
+  if(err){
+    res.status(401).send({message: 'Unauthorized access'})
+  }
+  req.decoded = decoded;
+  next();
+})
+}
+
 
 
 async function run () {
@@ -64,10 +80,10 @@ app.post('/orders', async (req , res) => {
   res.send(result)
 })
 
-// getting users orders from db
-app.get('/orders', async(req, res) => {
-  let query = {};
 
+// getting users orders from db
+app.get('/orders', verifyJWT, async(req, res) => {
+  let query = {};
   if(req.query.email){
     query = {
       email: req.query.email
