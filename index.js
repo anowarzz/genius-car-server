@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const port =  process.env.PORT || 5000;
-var colors = require('colors');
+let colors = require('colors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const port =  process.env.PORT || 5000;
 
 
 // middle wares
@@ -25,8 +26,20 @@ async function run () {
 
 try{
   const serviceCollection = client.db('geniusCar').collection('services')
-
   const orderCollection = client.db('geniusCar').collection('orders')
+
+
+
+  // JWT token
+   app.post('/jwt', (req, res) => {
+    const user = req.body
+    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+    res.send({token})
+    
+   })
+
+
+
 
   // service api - loading all service from db
   app.get('/services', async (req, res) => {
