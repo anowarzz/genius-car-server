@@ -24,12 +24,12 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 function verifyJWT(req, res, next) {
 const authHeader = req.headers.authorization;
 if(!authHeader){
-  res.status(401).send({message: 'Unauthorized access'})
+ return res.status(401).send({message: 'Unauthorized access'})
 }
 const token = authHeader.split(' ')[1];
 jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
   if(err){
-    res.status(401).send({message: 'Unauthorized access'})
+    return res.status(403).send({message: 'Forbidden access'})
   }
   req.decoded = decoded;
   next();
@@ -49,7 +49,7 @@ try{
   // JWT token
    app.post('/jwt', (req, res) => {
     const user = req.body
-    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1d'})
     res.send({token})
     
    })
@@ -73,8 +73,8 @@ try{
     res.send(service)
   })
 
-// Orders api - sending order to db
-app.post('/orders', async (req , res) => {
+// create Orders api - sending order to db
+app.post('/orders', verifyJWT, async (req , res) => {
   const order = req.body;
   const result = await orderCollection.insertOne(order)
   res.send(result)
@@ -83,6 +83,12 @@ app.post('/orders', async (req , res) => {
 
 // getting users orders from db
 app.get('/orders', verifyJWT, async(req, res) => {
+  const decoded = req.decoded;
+  console.log(decoded, 'inside order api');
+  if(decoded.email !== req.query.email){
+    return res.send(403).send({message: 'Unauthorized Access'})
+  }
+  
   let query = {};
   if(req.query.email){
     query = {
@@ -94,8 +100,9 @@ app.get('/orders', verifyJWT, async(req, res) => {
    res.send(orders)
 });
 
+
 // patch
-app.patch('/orders/:id', async(req, res) => {
+app.patch('/orders/:id', verifyJWT, async(req, res) => {
   const id = req.params.id;
   const status = req.body.status;
   const query = {_id: ObjectId(id)}
@@ -112,7 +119,7 @@ app.patch('/orders/:id', async(req, res) => {
 
 
 // deleting one order
-app.delete('/orders/:id', async (req, res) => {
+app.delete('/orders/:id', verifyJWT, async (req, res) => {
   const id = req.params.id
   const query = {_id:ObjectId(id)}
   const result = await orderCollection.deleteOne(query)
@@ -128,12 +135,6 @@ finally{
 }
 
 run().catch(err => console.error(err))
-
-
-
-
-
-
 
 
 
